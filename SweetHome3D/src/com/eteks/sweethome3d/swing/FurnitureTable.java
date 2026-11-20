@@ -750,9 +750,21 @@ public class FurnitureTable extends JTable implements View, Printable {
           return headerRendererLabel;
         }
       };
+    // List the columns to print: the visible columns, plus a Level column
+    // when printed furniture belongs to levels (on-screen columns aren't changed)
+    List<TableColumn> printedColumns = new ArrayList<TableColumn>();
     for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
-      final TableColumn tableColumn = columnModel.getColumn(columnIndex);
-      // Create a printable column from existing table column
+      printedColumns.add(columnModel.getColumn(columnIndex));
+    }
+    if (columnModel instanceof FurnitureTableColumnModel
+            && containsFurnitureAtLevel()) {
+      TableColumn levelColumn = ((FurnitureTableColumnModel)columnModel).availableColumns.get(
+              HomePieceOfFurniture.SortableProperty.LEVEL);
+      if (!printedColumns.contains(levelColumn)) {
+        printedColumns.add(levelColumn);
+      }
+    }
+    for (final TableColumn tableColumn : printedColumns) {
       TableColumn printableColumn = new TableColumn();
       printableColumn.setIdentifier(tableColumn.getIdentifier());
       printableColumn.setHeaderValue(tableColumn.getHeaderValue());
@@ -780,6 +792,21 @@ public class FurnitureTable extends JTable implements View, Printable {
       printableColumnModel.addColumn(printableColumn);
     }    
     return print(g, pageFormat, pageIndex, printableColumnModel, Color.BLACK);
+  }
+
+  /**
+   * Returns <code>true</code> if a piece displayed in this table belongs to a level.
+   */
+  private boolean containsFurnitureAtLevel() {
+    TableModel model = getModel();
+    for (int row = 0, n = model.getRowCount(); row < n; row++) {
+      Object value = model.getValueAt(row, 0);
+      if (value instanceof HomePieceOfFurniture
+              && ((HomePieceOfFurniture)value).getLevel() != null) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
